@@ -1,8 +1,5 @@
 import Phaser, { UP } from "phaser";
 
-import logo from "../assets/sprites/logo.png";
-import arrow from "../assets/sprites/arrow.png";
-
 const BOUNCES_PER_LEVEL = 9;
 let UPDATE_THRESHOLD_MEMORY = 0;
 
@@ -211,16 +208,16 @@ export default class HelloWorldScene extends Phaser.Scene {
 
   preload() {
     this.load.image("sky", "assets/skincrementCounties/space3.png");
-    this.load.image("logo", logo);
+    this.load.image("logo", "assets/sprites/logo.png");
     this.load.image("red", "assets/particles/red.png");
-    this.load.image("arrow", arrow);
+    this.load.image("arrow", "assets/sprites/arrow.png");
     this.load.image("button", "assets/sprites/button.png");
     this.load.image("green_bar", "assets/sprites/green_bar.png");
     this.load.image("red_bar", "assets/sprites/red_bar.png");
   }
 
   create() {
-    // set background color, so the sky is not black but blue
+    // set background color, so the sky is not black b
     this.cameras.main.setBackgroundColor("#ccccff");
     let that = this;
     this.started = false;
@@ -264,7 +261,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     };
 
     this.lines = [];
-    // this.add.image(GameWidth / 2, GameHeight / 2, "sky");
+    this.add.image(GameWidth / 2, GameHeight / 2, "sky");
 
     const logo = this.physics.add.image(400, 100, "logo");
     const line = new Phaser.Geom.Line();
