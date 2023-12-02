@@ -5,7 +5,7 @@ import HelloWorldScene from './HelloWorldScene'
 const config = {
 	type: Phaser.AUTO,
 	parent: 'app',
-	width: 1000,
+	width: 1200,
 	height: 850,
 	scale: {
 		// mode: Phaser.Scale.RESIZE,
