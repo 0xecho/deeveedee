@@ -1,5 +1,8 @@
 import Phaser, { UP } from "phaser";
 
+import logo from "../assets/sprites/logo.png";
+import arrow from "../assets/sprites/arrow.png";
+
 const BOUNCES_PER_LEVEL = 9;
 let UPDATE_THRESHOLD_MEMORY = 0;
 
@@ -208,9 +211,9 @@ export default class HelloWorldScene extends Phaser.Scene {
 
   preload() {
     this.load.image("sky", "assets/skincrementCounties/space3.png");
-    this.load.image("logo", "assets/sprites/logo.png");
+    this.load.image("logo", logo);
     this.load.image("red", "assets/particles/red.png");
-    this.load.image("arrow", "assets/sprites/arrow.png");
+    this.load.image("arrow", arrow);
     this.load.image("button", "assets/sprites/button.png");
     this.load.image("green_bar", "assets/sprites/green_bar.png");
     this.load.image("red_bar", "assets/sprites/red_bar.png");
