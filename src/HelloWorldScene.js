@@ -8,6 +8,41 @@ const TINT_COLOR_CYCLE = [
   0xff8000, 0xffff00, 0x00ff00, 0x00ffff, 0x0000ff, 0x8000ff, 0xff0000,
 ];
 
+function updateleaderboard(leaderboard) {
+  const sortedLeaderboard = leaderboard.sort((a, b) => {
+    if (a.max_credit === b.max_credit) {
+      return a.time_survived > b.time_survived ? -1 : 1;
+    }
+    return a.max_credit > b.max_credit ? -1 : 1;
+  });
+
+  const leaderboardTable = document.getElementById("leaderboard-table-body");
+  leaderboardTable.innerHTML = "";
+  sortedLeaderboard.forEach((row) => {
+    const tr = document.createElement("tr");
+    const name = document.createElement("td");
+    name.innerText = row.name;
+    const time = document.createElement("td");
+    time.innerText = row.time_survived;
+    const credit = document.createElement("td");
+    credit.innerText = row.max_credit;
+    tr.appendChild(name);
+    tr.appendChild(time);
+    tr.appendChild(credit);
+    leaderboardTable.appendChild(tr);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("https://deeveedee-leaderboard-dev-zgtq.2.us-1.fl0.io/leaderboard", {
+    method: "GET",
+  })
+    .then((res) => res.json())
+    .then((res) => {
+      updateleaderboard(res.leaderboard);
+    });
+});
+
 export default class HelloWorldScene extends Phaser.Scene {
   constructor() {
     super("hello-world");
@@ -132,7 +167,7 @@ export default class HelloWorldScene extends Phaser.Scene {
           -Math.PI,
           0,
         ][idx],
-        width: 20,
+        width: 10,
         color: 0xff0000,
       });
     });
@@ -168,7 +203,7 @@ export default class HelloWorldScene extends Phaser.Scene {
             Math.PI,
             -Math.PI / 2,
           ][idx],
-          width: 20,
+          width: 14,
           color: 0x00ff00,
         });
       }
@@ -270,9 +305,7 @@ export default class HelloWorldScene extends Phaser.Scene {
   }
 
   create() {
-    // set background color, so the sky is not black b
-    this.cameras.main.setBackgroundColor("#ccccff");
-    // tint logo to red
+    this.cameras.main.setBackgroundColor("#222222");
 
     let that = this;
     this.started = false;
@@ -281,7 +314,8 @@ export default class HelloWorldScene extends Phaser.Scene {
     const graphics = this.add.graphics();
     this.graphics = graphics;
 
-    this.credit = 1;
+    this.credit = 100;
+    this.max_credit = -1;
     this.start_time = null;
 
     const GameWidth = parseInt(this.game.config.width.toString());
@@ -301,6 +335,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.updateCredit = function (delta) {
       console.log("delta", delta);
       that.credit += delta;
+      that.max_credit = Math.max(that.max_credit, that.credit);
       that.creditText.setText(
         `Credit: ${that.credit.toFixed(2)} (${delta >= 0 ? "+" : "-"}${Math.abs(
           delta
@@ -547,7 +582,11 @@ export default class HelloWorldScene extends Phaser.Scene {
             ? Math.sign(normalizedDelta) * 5
             : normalizedDelta
         );
-        // that.updateCredit(Math.max((scoreDelta / 100) * that.credit, 5));
+
+        if (Math.sign(normalizedDelta) < 0) {
+          that.cameras.main.shake(50, 0.005);
+        }
+
         that.logo.setTintFill(
           TINT_COLOR_CYCLE[that.incrementCount % TINT_COLOR_CYCLE.length],
           TINT_COLOR_CYCLE[that.incrementCount % TINT_COLOR_CYCLE.length],
@@ -640,20 +679,24 @@ export default class HelloWorldScene extends Phaser.Scene {
     // prompt name and submit score to POST /leaderboard {name, time_survived, max_credit}
     const playerName = prompt("Enter your name to submit your score");
     if (playerName) {
-      fetch("https://deeveedee-leaderboard-dev-zgtq.2.us-1.fl0.io/leaderboard", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: playerName,
-          time_survived: this._get_time(this.start_time),
-          max_credit: this.credit.toFixed(2),
-        }),
-      }).then((res) => res.json())
-      .then((res) => {
-        console.log(res);
-      });
+      fetch(
+        "https://deeveedee-leaderboard-dev-zgtq.2.us-1.fl0.io/leaderboard",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: playerName,
+            time_survived: this._get_time(this.start_time),
+            max_credit: this.max_credit.toFixed(2),
+          }),
+        }
+      )
+        .then((res) => res.json())
+        .then((res) => {
+          updateleaderboard(res.leaderboard);
+        });
     }
   }
 }

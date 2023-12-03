@@ -11,10 +11,70 @@
 	<div style="display: flex; width: 100%;">
 		<button id="start-btn" style="margin: auto;">Start Game</button>
 	</div>
-	<div id="app">
+	<div style="display: flex; width: 100%; height: 100vh; flex-direction: row; justify-content: space-evenly;">
+		<table id="leaderboard-table">
+			<thead>
+				<tr>
+					<th colspan="3">Leaderboard</th>
+				</tr>
+				<tr>
+					<th>Player</th>
+					<th>Time</th>
+					<th>Max Score</th>
+				</tr>
+			</thead>
+			<tbody id="leaderboard-table-body">
+			</tbody>
+		</table>
+		<div id="app">
 
+		</div>
+		<table>
+			<th>How to play</th>
+			<tr>
+				<td>Use the <b>arrow keys</b> or </b>drag the arrow</b> to adjust the direction you want to launch the DeeVeeDee</td>
+			</tr>
+			<tr>
+				<td>Press the <b>spacebar</b> to launch the DeeVeeDee</td>
+			</tr>
+			<tr>
+				<td>
+					You can only launch once every few bounces. Keep a close watch on the <b>launch meter</b> on the top left of the screen.
+				</td>
+			</tr>
+			<tr>
+				<td>The <b>closer</b> to the corner you land, the <b>more points</b> you get</td>
+			</tr>	
+			<tr>
+				<td>Avoid the <b>red</b> borders, they hurt.
+			</tr>	
+			<tr>
+				<td>Survive <b>as long as possible</b>, the game ends when your credit runs out.
+			</tr>
+		</table>
 	</div>
 	<script type="module" src="src/main.js"></script>
+
+	<style>
+		table {
+			border-collapse: collapse;
+			width: 10%;
+			margin: auto;
+		}
+		th {
+			margin-left: auto;
+		}
+		table, th, td {
+			border: 1px solid black;
+		}
+		th, td {
+			padding: 1px;
+			text-align: left;
+		}
+		tr {
+			height: 15px;
+		}
+	</style>
 </body>
 
 </html>
