@@ -1,7 +1,12 @@
-import Phaser, { UP } from "phaser";
+import Phaser from "phaser";
 
 const BOUNCES_PER_LEVEL = 9;
 let UPDATE_THRESHOLD_MEMORY = 0;
+const SPEED_INCREMENTS = 15;
+
+const TINT_COLOR_CYCLE = [
+  0xff8000, 0xffff00, 0x00ff00, 0x00ffff, 0x0000ff, 0x8000ff, 0xff0000,
+];
 
 export default class HelloWorldScene extends Phaser.Scene {
   constructor() {
@@ -9,7 +14,8 @@ export default class HelloWorldScene extends Phaser.Scene {
   }
 
   _get_score_delta(x, y) {
-    console.log("x,y", x, y);
+    const GameWidth = parseInt(this.game.config.width.toString());
+    const GameHeight = parseInt(this.game.config.height.toString());
     const badBorderLines = this.lines.filter(
       (line) => line.isBorder && line.name.length === 2
     );
@@ -20,26 +26,62 @@ export default class HelloWorldScene extends Phaser.Scene {
     const goodBorderLine = goodBorderLines.find((line) => {
       const endX = line.startX + line.length * Math.cos(line.angle);
       const endY = line.startY + line.length * Math.sin(line.angle);
-      // check if point is on line +- 40
-      const xInside = Math.min(line.startX, endX) < x && x < Math.max(line.startX, endX);
-      const yInside = Math.min(line.startY, endY) < y && y < Math.max(line.startY, endY);
-      return xInside && yInside;
-      
+      if (
+        Math.abs(line.startX - endX) < 0.005 &&
+        Math.abs(line.startX - x) < 0.005
+      ) {
+        const yInside =
+          Math.min(line.startY, endY) < y && y < Math.max(line.startY, endY);
+        return yInside;
+      }
+      if (
+        Math.abs(line.startY - endY) < 0.005 &&
+        Math.abs(line.startY - y) < 0.005
+      ) {
+        const xInside =
+          Math.min(line.startX, endX) < x && x < Math.max(line.startX, endX);
+        return xInside;
+      }
     });
     if (goodBorderLine !== undefined) {
-      return 3;
+      const closestX = goodBorderLine.startX < GameWidth / 2 ? 0 : GameWidth;
+      const closestY = goodBorderLine.startY < GameHeight / 2 ? 0 : GameHeight;
+
+      // return a scaled 10-30, based on how close x,y is to closestX, closestY
+      const diffX = Math.abs(closestX - x);
+      const diffY = Math.abs(closestY - y);
+
+      const scaleX = diffX / goodBorderLine.length;
+      const scaleY = diffY / goodBorderLine.length;
+
+      const scale = Math.max(scaleX, scaleY);
+
+      const score = 10 + 20 * (1 - scale);
+      return score;
     }
 
     const badBorderLine = badBorderLines.find((line) => {
       const endX = line.startX + line.length * Math.cos(line.angle);
       const endY = line.startY + line.length * Math.sin(line.angle);
-      // check if point is on line +- 40
-      const xInside = Math.min(line.startX, endX) < x && x < Math.max(line.startX, endX);
-      const yInside = Math.min(line.startY, endY) < y && y < Math.max(line.startY, endY);
-      return xInside && yInside;
+      if (
+        Math.abs(line.startX - endX) < 0.005 &&
+        Math.abs(line.startX - x) < 0.005
+      ) {
+        const yInside =
+          Math.min(line.startY, endY) < y && y < Math.max(line.startY, endY);
+        return yInside;
+      }
+      if (
+        Math.abs(line.startY - endY) < 0.005 &&
+        Math.abs(line.startY - y) < 0.005
+      ) {
+        const xInside =
+          Math.min(line.startX, endX) < x && x < Math.max(line.startX, endX);
+        return xInside;
+      }
     });
     if (badBorderLine !== undefined) {
-      return -2;
+      return -20;
     }
 
     return 0;
@@ -151,7 +193,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     });
 
     this.lines.forEach((line) => {
-      graphics.lineStyle(line.width, line.color);
+      graphics.lineStyle(line.width, line.color, line?.alpha);
       const _line = new Phaser.Geom.Line();
       _line.setTo(
         line.startX,
@@ -163,10 +205,18 @@ export default class HelloWorldScene extends Phaser.Scene {
     });
   }
 
+  _get_speed(baseSpeed, incrementCount, speedIncrements, credit) {
+    const normalizedCredit = Math.log2(credit ? credit : 1);
+    return Math.min(
+      baseSpeed + incrementCount * speedIncrements + normalizedCredit * 10,
+      1000
+    );
+  }
+
   _get_ready_threshold(incrementCount) {
     const new_ready_threshold = Math.min(
       Math.floor(incrementCount / BOUNCES_PER_LEVEL) + 1,
-      5
+      4
     );
     if (new_ready_threshold !== UPDATE_THRESHOLD_MEMORY) {
       UPDATE_THRESHOLD_MEMORY = new_ready_threshold;
@@ -191,19 +241,21 @@ export default class HelloWorldScene extends Phaser.Scene {
   _show_level_up() {
     const GameWidth = parseInt(this.game.config.width.toString());
     const GameHeight = parseInt(this.game.config.height.toString());
-    const level_up = this.add.rectangle(
-      GameWidth / 2,
-      GameHeight / 2,
-      GameWidth,
-      GameHeight,
-      0xffa500,
-      0.2
-    );
-    level_up.setDepth(3);
+    // const level_up = this.add.rectangle(
+    //   GameWidth / 2,
+    //   GameHeight / 2,
+    //   GameWidth,
+    //   GameHeight,
+    //   0xffa500,
+    //   0.2
+    // );
+    // level_up.setDepth(3);
 
-    setTimeout(() => {
-      level_up.destroy();
-    }, 2000);
+    // setTimeout(() => {
+    //   level_up.destroy();
+    // }, 2000);
+    this.graphics.lineStyle(10, 0xffa500, 0.2);
+    this.graphics.strokeRect(0, 0, GameWidth, GameHeight);
   }
 
   preload() {
@@ -214,28 +266,32 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.load.image("button", "assets/sprites/button.png");
     this.load.image("green_bar", "assets/sprites/green_bar.png");
     this.load.image("red_bar", "assets/sprites/red_bar.png");
+    this.load.image("hit_marker", "assets/sprites/hitmarker.png");
   }
 
   create() {
     // set background color, so the sky is not black b
     this.cameras.main.setBackgroundColor("#ccccff");
+    // tint logo to red
+
     let that = this;
     this.started = false;
     this.paused = false;
+    this.gameOver = false;
     const graphics = this.add.graphics();
     this.graphics = graphics;
 
-    this.credit = 100;
+    this.credit = 1;
     this.start_time = null;
 
     const GameWidth = parseInt(this.game.config.width.toString());
     const GameHeight = parseInt(this.game.config.height.toString());
 
-    this.goodBorderLength = 0.85;
-    this.badBorderLength = 0.14;
+    this.goodBorderLength = 0.79;
+    this.badBorderLength = 0.19;
 
-    this.goodBorderThreshold = 0.1;
-    this.badBorderThreshold = 0.88;
+    this.goodBorderThreshold = 0.25;
+    this.badBorderThreshold = 0.7;
     this.desiredSteps = 75;
     this.goodUpdateRate =
       (this.goodBorderLength - this.goodBorderThreshold) / this.desiredSteps;
@@ -245,8 +301,12 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.updateCredit = function (delta) {
       console.log("delta", delta);
       that.credit += delta;
-      that.creditText.setText(`Credit: ${that.credit}`);
-    }
+      that.creditText.setText(
+        `Credit: ${that.credit.toFixed(2)} (${delta >= 0 ? "+" : "-"}${Math.abs(
+          delta
+        ).toFixed(2)})`
+      );
+    };
 
     this.updateBorders = function () {
       this.goodBorderLength = Math.max(
@@ -261,9 +321,15 @@ export default class HelloWorldScene extends Phaser.Scene {
     };
 
     this.lines = [];
-    this.add.image(GameWidth / 2, GameHeight / 2, "sky");
 
+    this.hit_marker = this.physics.add.image(-50, -50, "hit_marker");
     const logo = this.physics.add.image(400, 100, "logo");
+    logo.setTintFill(
+      TINT_COLOR_CYCLE[0],
+      TINT_COLOR_CYCLE[0],
+      TINT_COLOR_CYCLE[0],
+      TINT_COLOR_CYCLE[0]
+    );
     const line = new Phaser.Geom.Line();
 
     this.logo = logo;
@@ -289,8 +355,9 @@ export default class HelloWorldScene extends Phaser.Scene {
       startY: logo.y,
       length: shooterLineLength,
       angle: initialAngle,
-      width: 2,
-      color: 0xff0000,
+      width: 25,
+      color: 0x00ee00,
+      alpha: 0.2,
     });
 
     const arrow = this.add.image(line.x2, line.y2, "arrow");
@@ -299,6 +366,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     arrow.setRotation(initialAngle);
     arrow.setDepth(2);
     arrow.setInteractive();
+    arrow.setAlpha(0.7, 0.7, 0.7, 0.7);
 
     this.redrawLines(graphics, this.badBorderLength, this.goodBorderLength);
     this.input.setDraggable(arrow);
@@ -322,7 +390,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     );
 
     const baseSpeed = 80;
-    const speedInc = 15;
+
     this.incrementCount = 0;
     this.mostRecentCollisionCount = 0;
     const readyIn = this._get_ready_time(
@@ -330,30 +398,30 @@ export default class HelloWorldScene extends Phaser.Scene {
       this.incrementCount
     );
     const readyCounter = this.add.text(
-      GameWidth * 0.85,
+      GameWidth * 0.8,
       GameHeight * 0.05,
-      readyIn ? `Ready in ${readyIn}` : "Ready to Launch",
+      readyIn ? `Ready in ${readyIn} Bounce` : "Ready to Launch",
       {
         // @ts-ignore
-        fill: "#3ff",
+        fill: "#f00",
       }
     );
     this.creditText = this.add.text(
-      GameWidth * 0.85,
+      GameWidth * 0.8,
       GameHeight * 0.075,
       `Credit: ${this.credit}`,
       {
         // @ts-ignore
-        fill: "#3ff",
+        fill: "#f00",
       }
     );
     this.timeSurvived = this.add.text(
-      GameWidth * 0.85,
+      GameWidth * 0.8,
       GameHeight * 0.1,
       `Time: ${this._get_time(that._start_time)}`,
       {
         // @ts-ignore
-        fill: "#3ff",
+        fill: "#f00",
       }
     );
 
@@ -362,7 +430,11 @@ export default class HelloWorldScene extends Phaser.Scene {
         that.mostRecentCollisionCount,
         that.incrementCount
       );
-      readyCounter.setText(readyIn ? `Ready in ${readyIn}` : "Ready to Launch");
+      readyCounter.setText(
+        readyIn
+          ? `Ready in ${readyIn} Bounce${readyIn > 1 ? "s" : ""}`
+          : "Ready to Launch"
+      );
     };
     this.updateIncrementCount = function () {
       that.incrementCount += 1;
@@ -391,7 +463,11 @@ export default class HelloWorldScene extends Phaser.Scene {
         }
       }
       that.updateRecentCollisionCount(0);
-      const speed = baseSpeed + that.incrementCount * speedInc;
+      const speed = that._get_speed(
+        baseSpeed,
+        that.incrementCount,
+        SPEED_INCREMENTS
+      );
       that.updateIncrementCount();
 
       const angle = arrow.rotation;
@@ -399,30 +475,36 @@ export default class HelloWorldScene extends Phaser.Scene {
       logo.setVelocity(x, y);
     }
 
-    this.startBtn = document
-      .getElementById("start-btn")
-      .addEventListener("click", function () {
-        if (that.started === false) {
-          that.started = true;
-          that.start_time = new Date();
-          launchInDirection(true);
-          document.getElementById("start-btn").innerText = "Pause";
+    this.startBtn = document.getElementById("start-btn");
+
+    this.startBtn.addEventListener("click", function () {
+      if (that.started === false) {
+        that.started = true;
+        that.start_time = new Date();
+        launchInDirection(true);
+        document.getElementById("start-btn").innerText = "Pause";
+      } else {
+        if (that.paused === false) {
+          that.paused = true;
+          that.game.scene.pause("hello-world");
+          document.getElementById("start-btn").innerText = "Resume";
         } else {
-          if (that.paused === false) {
-            that.paused = true;
-            that.game.scene.pause("hello-world");
-            document.getElementById("start-btn").innerText = "Resume";
-          } else {
-            that.paused = false;
-            that.game.scene.resume("hello-world");
-            document.getElementById("start-btn").innerText = "Pause";
-          }
+          that.paused = false;
+          that.game.scene.resume("hello-world");
+          document.getElementById("start-btn").innerText = "Pause";
         }
-        document.getElementById("app").focus();
-      });
+      }
+      document.getElementById("app").focus();
+    });
 
     const spacebar = this.input.keyboard.addKey("SPACE");
-    spacebar.on("down", () => launchInDirection(logo.body.speed === 0));
+    spacebar.on("down", () => {
+      if (this.started) {
+        launchInDirection(logo.body.speed === 0);
+      } else {
+        this.startBtn.click();
+      }
+    });
 
     const cursors = this.input.keyboard.createCursorKeys();
     cursors.left.onDown = function () {
@@ -439,15 +521,39 @@ export default class HelloWorldScene extends Phaser.Scene {
           that.updateIncrementCount();
         }
 
-        const scoreDelta = that._get_score_delta(
-          body.gameObject.x,
-          body.gameObject.y
+        const closestX = body.gameObject.x < GameWidth / 2 ? 0 : GameWidth;
+        const closestY = body.gameObject.y < GameHeight / 2 ? 0 : GameHeight;
+
+        const diffToClosestX = Math.abs(body.gameObject.x - closestX);
+        const diffToClosestY = Math.abs(body.gameObject.y - closestY);
+
+        let collisionX, collisionY;
+        if (diffToClosestX < diffToClosestY) {
+          collisionX = closestX;
+          collisionY = body.gameObject.y;
+        } else {
+          collisionX = body.gameObject.x;
+          collisionY = closestY;
+        }
+
+        this.hit_marker.x = collisionX ? collisionX - 5 : collisionX + 5;
+        this.hit_marker.y = collisionY ? collisionY - 5 : collisionY + 5;
+
+        const scoreDelta = that._get_score_delta(collisionX, collisionY);
+
+        const normalizedDelta = (scoreDelta / 100) * that.credit;
+        this.updateCredit(
+          Math.abs(normalizedDelta) < 5
+            ? Math.sign(normalizedDelta) * 5
+            : normalizedDelta
         );
-        console.log(body)
-
-        // that.credit += scoreDelta * that.credit;
-        that.updateCredit(scoreDelta * that.credit);
-
+        // that.updateCredit(Math.max((scoreDelta / 100) * that.credit, 5));
+        that.logo.setTintFill(
+          TINT_COLOR_CYCLE[that.incrementCount % TINT_COLOR_CYCLE.length],
+          TINT_COLOR_CYCLE[that.incrementCount % TINT_COLOR_CYCLE.length],
+          TINT_COLOR_CYCLE[that.incrementCount % TINT_COLOR_CYCLE.length],
+          TINT_COLOR_CYCLE[that.incrementCount % TINT_COLOR_CYCLE.length]
+        );
         that.updateRecentCollisionCount();
         that.updateReadyCounter();
         that.updateBorders();
@@ -479,6 +585,12 @@ export default class HelloWorldScene extends Phaser.Scene {
     );
 
     this.timeSurvived.setText(`Time: ${this._get_time(this.start_time)}`);
+
+    if (this.credit < 0) {
+      this.gameOver = true;
+      this.scene.pause();
+      this._show_game_over();
+    }
   }
 
   _get_time(start_time) {
@@ -490,5 +602,58 @@ export default class HelloWorldScene extends Phaser.Scene {
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff - minutes * 60000) / 1000);
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+  }
+
+  _show_game_over() {
+    const GameWidth = parseInt(this.game.config.width.toString());
+    const GameHeight = parseInt(this.game.config.height.toString());
+    const level_up = this.add.rectangle(
+      GameWidth / 2,
+      GameHeight / 2,
+      GameWidth,
+      GameHeight,
+      0xff0000,
+      0.2
+    );
+    level_up.setDepth(3);
+    const gameOverText = this.add.text(
+      GameWidth / 2,
+      GameHeight / 2,
+      `
+      Game Over
+
+      You survived for ${this._get_time(this.start_time)}
+      
+      `,
+      {
+        // @ts-ignore
+        fill: "#f00",
+        fontSize: 50,
+      }
+    );
+    gameOverText.setOrigin(0.5, 0.5);
+    gameOverText.setDepth(4);
+    this.startBtn.innerText = "Restart";
+    this.startBtn.addEventListener("click", () => {
+      window.location.reload();
+    });
+    // prompt name and submit score to POST /leaderboard {name, time_survived, max_credit}
+    const playerName = prompt("Enter your name to submit your score");
+    if (playerName) {
+      fetch("https://deeveedee-leaderboard-dev-zgtq.2.us-1.fl0.io/leaderboard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: playerName,
+          time_survived: this._get_time(this.start_time),
+          max_credit: this.credit.toFixed(2),
+        }),
+      }).then((res) => res.json())
+      .then((res) => {
+        console.log(res);
+      });
+    }
   }
 }
