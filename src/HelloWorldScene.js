@@ -10,10 +10,10 @@ const TINT_COLOR_CYCLE = [
 
 function updateleaderboard(leaderboard) {
   const sortedLeaderboard = leaderboard.sort((a, b) => {
-    if (a.max_credit === b.max_credit) {
-      return a.time_survived > b.time_survived ? -1 : 1;
+    if(a.max_credit !== b.max_credit) {
+      return b.max_credit - a.max_credit;
     }
-    return a.max_credit > b.max_credit ? -1 : 1;
+    return a.time_survived - b.time_survived;
   });
 
   const leaderboardTable = document.getElementById("leaderboard-table-body");
@@ -34,6 +34,14 @@ function updateleaderboard(leaderboard) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const sensitivityInput = document.getElementById("sensitivity");
+  // @ts-ignore
+  sensitivityInput.value = localStorage.getItem("sensitivity") || 5;
+  sensitivityInput.addEventListener("change", (e) => {
+    // @ts-ignore
+    localStorage.setItem("sensitivity", e.target.value);
+  });
+
   fetch("https://deeveedee-leaderboard-dev-zgtq.2.us-1.fl0.io/leaderboard", {
     method: "GET",
   })
@@ -302,6 +310,9 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.load.image("green_bar", "assets/sprites/green_bar.png");
     this.load.image("red_bar", "assets/sprites/red_bar.png");
     this.load.image("hit_marker", "assets/sprites/hitmarker.png");
+
+    this.load.audio("doh", "assets/sound/doh.mp3");
+    this.load.audio("click", "assets/sound/click.mp3");
   }
 
   create() {
@@ -413,13 +424,13 @@ export default class HelloWorldScene extends Phaser.Scene {
         arrow.setRotation(angle);
         arrow.x = logo.x + Math.cos(angle) * shooterLineLength;
         arrow.y = logo.y + Math.sin(angle) * shooterLineLength;
-        this.lines = this.lines.map((line) => {
+        this.lines = that.lines.map((line) => {
           if (line.name === "shooter") {
             return { ...line, angle, startX: logo.x, startY: logo.y };
           }
           return line;
         });
-        this.redrawLines(graphics, that.badBorderLength, that.goodBorderLength);
+        that.redrawLines(graphics, that.badBorderLength, that.goodBorderLength);
       },
       this
     );
@@ -453,7 +464,7 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.timeSurvived = this.add.text(
       GameWidth * 0.8,
       GameHeight * 0.1,
-      `Time: ${this._get_time(that._start_time)}`,
+      `Time: ${this._get_time(that.start_time)}`,
       {
         // @ts-ignore
         fill: "#f00",
@@ -543,10 +554,17 @@ export default class HelloWorldScene extends Phaser.Scene {
 
     const cursors = this.input.keyboard.createCursorKeys();
     cursors.left.onDown = function () {
-      arrow.angle -= 5;
+      /**
+       * @type {HTMLInputElement}
+       */
+      // @ts-ignore
+      const input = document.getElementById("sensitivity");
+      arrow.angle -= parseInt(input.value); 
     };
     cursors.right.onDown = function () {
-      arrow.angle += 5;
+      const input = document.getElementById("sensitivity");
+      // @ts-ignore
+      arrow.angle += parseInt(input.value);
     };
 
     this.physics.world.on(
@@ -585,6 +603,11 @@ export default class HelloWorldScene extends Phaser.Scene {
 
         if (Math.sign(normalizedDelta) < 0) {
           that.cameras.main.shake(50, 0.005);
+          // play doh sound
+          this.sound.play("doh");
+        } else {  
+          // play click sound
+          this.sound.play("click");
         }
 
         that.logo.setTintFill(
@@ -637,6 +660,7 @@ export default class HelloWorldScene extends Phaser.Scene {
       return "0:00";
     }
     const now = new Date();
+    // @ts-ignore
     const diff = now - start_time;
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff - minutes * 60000) / 1000);
@@ -667,6 +691,7 @@ export default class HelloWorldScene extends Phaser.Scene {
       {
         // @ts-ignore
         fill: "#f00",
+        // @ts-ignore
         fontSize: 50,
       }
     );
